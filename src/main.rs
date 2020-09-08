@@ -20,11 +20,12 @@ fn main() {
 
         let system_mem_usage = system_mem_usage();
 
-        println!("process_cpu_usage\t->\t{:?}%\nsystem_cpu_usage\t->\t{}%\nprocess_mem_usage\t->\t{}%\nsystem_mem_usage\t->\t{}%", process_usage,
-				system_cpu_usage,
-				process_mem_usage,
-				system_mem_usage,
-			);
+        println!("process_cpu_usage\t->\t{:?}%\nsystem_cpu_usage\t->\t{}%\nprocess_mem_usage\t->\t{}%\nsystem_mem_usage\t->\t{}%", 
+					process_usage,
+					system_cpu_usage,
+					process_mem_usage,
+					system_mem_usage,
+				);
         std::thread::sleep(std::time::Duration::from_secs(1));
     }
 }
