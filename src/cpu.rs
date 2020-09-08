@@ -87,7 +87,7 @@ pub fn process_cpu_count(pid: &str) -> Result<f64, iError::MyError> {
     let mut count: f64 = 0.0;
 
     for v in 13..=16 {
-        println!("cpu column num: {}", &v);
+        // println!("cpu column num: {}", &v);
 
         // 如果 slice.get(index)存在，则将该数据转换成f64格式
         if let Some(tmp) = column.get(v).and_then(|column| {
@@ -102,12 +102,12 @@ pub fn process_cpu_count(pid: &str) -> Result<f64, iError::MyError> {
         }
     }
 
-    println!("here  count -> {:?}", count);
+    // println!("here  count -> {:?}", count);
     Ok(count)
 }
 
 // 系统cpu使用率
-pub fn total_cpu_usage() -> f64 {
+pub fn system_cpu_usage() -> f64 {
     let pre = cpu_stat_file_to_struct().unwrap();
     std::thread::sleep(std::time::Duration::from_millis(300));
     let now = cpu_stat_file_to_struct().unwrap();
@@ -166,7 +166,7 @@ pub fn core_num() -> Result<usize, iError::MyError> {
 }
 
 mod test {
-    use crate::cpu::process_cpu_count;
+    // use crate::cpu::process_cpu_count;
     #[cfg(test)]
     fn test() {
         print!("{:?}", process_cpu_count("1"));
