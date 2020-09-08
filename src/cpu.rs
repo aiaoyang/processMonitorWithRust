@@ -68,23 +68,45 @@ pub fn process_cpu_usage_with_duration(pid: &str, duration: Duration) -> f64 {
     println!("time to f64: {}", duration);
     ((c2 as f64) - (c1 as f64)) / (duration * core_num().unwrap() as f64)
 }
+
 // 进程cpu使用率 使用 300ms 间隔采集
 pub fn process_cpu_usage(pid: &str) -> f64 {
     process_cpu_usage_with_duration(pid, Duration::from_millis(300))
 }
 
-// 进程快照
-pub fn process_cpu_count(pid: &str) -> Result<usize, iError::MyError> {
+// 进程cpu使用率快照
+pub fn process_cpu_count(pid: &str) -> Result<f64, iError::MyError> {
     use crate::read;
-    let file = format!("/proc/{}/stat", pid);
-    let line = read::read_file_line(file, 1)?;
-    let column = line.split_whitespace();
 
-    println!("here -> {:?}", column);
-    Ok(0)
+    let file = format!("/proc/{}/stat", pid);
+
+    let line = read::read_file_line(file, 0)?;
+
+    let column = line.split_whitespace().into_iter().collect::<Vec<&str>>();
+
+    let mut count: f64 = 0.0;
+
+    for v in 13..=16 {
+        println!("cpu column num: {}", &v);
+
+        // 如果 slice.get(index)存在，则将该数据转换成f64格式
+        if let Some(tmp) = column.get(v).and_then(|column| {
+            // 如果转换成f64格式成功，则返回转换后的数据
+            if let Ok(value) = column.parse::<f64>() {
+                Some(value)
+            } else {
+                panic!("error, some column does not exist");
+            }
+        }) {
+            count += tmp;
+        }
+    }
+
+    println!("here  count -> {:?}", count);
+    Ok(count)
 }
 
-// 总cpu使用率
+// 系统cpu使用率
 pub fn total_cpu_usage() -> f64 {
     let pre = cpu_stat_file_to_struct().unwrap();
     std::thread::sleep(std::time::Duration::from_millis(300));
@@ -139,7 +161,7 @@ pub fn core_num() -> Result<usize, iError::MyError> {
         .into_iter()
         .collect::<Vec<_>>()
         .len();
-    println!("core num : {}", res);
+    // println!("core num : {}", res);
     Ok(res)
 }
 

@@ -1,3 +1,4 @@
+// #![feature(const_fn)]
 mod cpu;
 mod error;
 mod mem;
@@ -8,6 +9,11 @@ use mem::*;
 
 // }
 fn main() {
-    cpu::core_num().unwrap();
-    print!("{:?}", process_cpu_count("1"));
+    let pids = std::env::args().collect::<Vec<String>>();
+
+    for _ in 0..10 {
+        let usage = process_cpu_usage(pids.get(1).unwrap().as_str());
+        println!("process cpu usage : {:?}", usage);
+        std::thread::sleep(std::time::Duration::from_secs(1));
+    }
 }
