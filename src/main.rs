@@ -1,23 +1,13 @@
-use std::time::Duration;
-
 mod cpu;
+mod error;
 mod mem;
+mod read;
 
 use cpu::*;
 use mem::*;
 
 // }
 fn main() {
-    println!(
-        "process: {}\ntotal {}\n",
-        process_cpu_usage("423"),
-        total_cpu_usage(),
-    );
-    // println!("c: {:?}", res);
-
-    println!(
-        "total : {:?}\ncurrent : {:?}",
-        total_mem().unwrap(),
-        mem_usage("1").unwrap()
-    );
+    cpu::core_num().unwrap();
+    print!("{:?}", process_cpu_count("1"));
 }

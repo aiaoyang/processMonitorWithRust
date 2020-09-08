@@ -1,5 +1,5 @@
+use crate::error as iError;
 use std::time::Duration;
-
 // HZ 系统时钟
 // const HZ: i32 = 100;
 
@@ -16,7 +16,6 @@ pub struct SysCPU {
     used: usize,
     total: usize,
 }
-
 impl std::ops::Sub<SysCPU> for SysCPU {
     type Output = SysCPU;
     fn sub(self, rhs: Self::Output) -> Self::Output {
@@ -50,15 +49,16 @@ impl SysCPU {
         };
     }
 }
-// 进程cpu使用率
+
+/// 进程cpu使用率 需要自定义采集间隔时间
 pub fn process_cpu_usage_with_duration(pid: &str, duration: Duration) -> f64 {
-    let c1 = process_cpu_count(pid).unwrap_or(0);
+    let c1 = process_cpu_count(pid).unwrap();
 
     let t1 = std::time::SystemTime::now();
 
     std::thread::sleep(duration);
 
-    let c2 = process_cpu_count(pid).unwrap_or(0);
+    let c2 = process_cpu_count(pid).unwrap();
 
     let duration = std::time::SystemTime::now()
         .duration_since(t1)
@@ -66,37 +66,22 @@ pub fn process_cpu_usage_with_duration(pid: &str, duration: Duration) -> f64 {
         .as_secs_f64();
 
     println!("time to f64: {}", duration);
-    ((c2 as f64) - (c1 as f64)) / (duration * core_num() as f64)
+    ((c2 as f64) - (c1 as f64)) / (duration * core_num().unwrap() as f64)
 }
-//
+// 进程cpu使用率 使用 300ms 间隔采集
 pub fn process_cpu_usage(pid: &str) -> f64 {
     process_cpu_usage_with_duration(pid, Duration::from_millis(300))
 }
 
 // 进程快照
-fn process_cpu_count(pid: &str) -> Result<usize, std::io::Error> {
-    let fname = String::from("/proc/") + pid + "/stat";
-    std::fs::read(&fname).map(|f| {
-        String::from_utf8(f)
-            .map(|content| {
-                content
-                    .lines()
-                    .next()
-                    .map(|first_line| {
-                        let iter = first_line.split_whitespace().collect::<Vec<&str>>();
+pub fn process_cpu_count(pid: &str) -> Result<usize, iError::MyError> {
+    use crate::read;
+    let file = format!("/proc/{}/stat", pid);
+    let line = read::read_file_line(file, 1)?;
+    let column = line.split_whitespace();
 
-                        let mut tmp: usize = 0;
-
-                        for v in vec![14, 15, 16, 17] {
-                            tmp += iter.get(v).unwrap().parse::<usize>().unwrap_or(0);
-                        }
-                        tmp
-                    })
-                    .unwrap_or(0)
-            })
-            .unwrap_or(0)
-    })
-    // .unwrap()
+    println!("here -> {:?}", column);
+    Ok(0)
 }
 
 // 总cpu使用率
@@ -105,25 +90,27 @@ pub fn total_cpu_usage() -> f64 {
     std::thread::sleep(std::time::Duration::from_millis(300));
     let now = cpu_stat_file_to_struct().unwrap();
     let delta = now - pre;
-    println!("delta : {:?}", delta);
+    // println!("delta : {:?}", delta);
     delta.used as f64 / delta.total as f64
 }
 
 // 从文件读取cpu状态
-fn cpu_stat_file_to_struct() -> Result<SysCPU, ()> {
-    let f = std::fs::read("/proc/stat").unwrap_or(Vec::new());
-    let content = String::from_utf8(f).unwrap();
+fn cpu_stat_file_to_struct() -> Result<SysCPU, iError::MyError> {
+    let content = std::fs::read_to_string("/proc/stat")?;
+
     let mut slice = content.lines().next().unwrap().split_whitespace();
+    // 跳过 首列 cpu 字段
+    // cpu  352783 915 125099 70973099 25194 0 6192 0 0 0
     slice.next();
 
-    let user = slice.next().unwrap().parse::<usize>().unwrap();
-    let nice = slice.next().unwrap().parse::<usize>().unwrap();
-    let system = slice.next().unwrap().parse::<usize>().unwrap();
-    let idle = slice.next().unwrap().parse::<usize>().unwrap();
-    let iowait = slice.next().unwrap().parse::<usize>().unwrap();
-    let irq = slice.next().unwrap().parse::<usize>().unwrap();
-    let softirq = slice.next().unwrap().parse::<usize>().unwrap();
-    let steal = slice.next().unwrap().parse::<usize>().unwrap();
+    let user = slice.next().unwrap().parse::<usize>()?;
+    let nice = slice.next().unwrap().parse::<usize>()?;
+    let system = slice.next().unwrap().parse::<usize>()?;
+    let idle = slice.next().unwrap().parse::<usize>()?;
+    let iowait = slice.next().unwrap().parse::<usize>()?;
+    let irq = slice.next().unwrap().parse::<usize>()?;
+    let softirq = slice.next().unwrap().parse::<usize>()?;
+    let steal = slice.next().unwrap().parse::<usize>()?;
     let total = user + nice + system + idle + iowait + irq + softirq + steal;
     let used = total - idle;
 
@@ -144,17 +131,22 @@ fn cpu_stat_file_to_struct() -> Result<SysCPU, ()> {
     Ok(c)
 }
 
-pub fn core_num() -> i8 {
-    let lines = std::fs::read("/proc/cpuinfo")
-        .map(|vec_content| String::from_utf8(vec_content))
-        .unwrap()
-        .unwrap();
-    let mut num = 0;
-    for line in lines.lines() {
-        if line.contains("processor") {
-            num += 1;
-        }
+pub fn core_num() -> Result<usize, iError::MyError> {
+    let content = std::fs::read_to_string("/proc/cpuinfo")?;
+    let res = content
+        .lines()
+        .filter(|line| line.contains("processor"))
+        .into_iter()
+        .collect::<Vec<_>>()
+        .len();
+    println!("core num : {}", res);
+    Ok(res)
+}
+
+mod test {
+    use crate::cpu::process_cpu_count;
+    #[cfg(test)]
+    fn test() {
+        print!("{:?}", process_cpu_count("1"));
     }
-    println!("num of core : {}", num);
-    num
 }
