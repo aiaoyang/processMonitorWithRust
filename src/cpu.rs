@@ -4,9 +4,11 @@ use std::time::Duration;
 // const HZ: i32 = 100;
 
 lazy_static! {
-        static ref DURATION_NUMBER:usize=300;
-        static ref CORE_NUM: f64 = core_num() as f64;// CPU核数
-                static ref DURATION: Duration = Duration::from_millis(300);// cpu采集间隔
+    static ref DURATION_NUMBER:usize=300; // 123
+
+    static ref CORE_NUM: f64 = core_num() as f64; // CPU核数
+
+    static ref DURATION: Duration = Duration::from_millis(300); // 	cpu采集间隔
 
     static ref CPU_TOTAL: f64 = *CORE_NUM * (*DURATION).as_secs_f64();// 采集间隔内的 CPU总时间
 }
@@ -73,7 +75,7 @@ pub fn process_cpu_usage(pid: &str) -> f64 {
     //     .unwrap()
     //     .as_secs_f64();
 
-    (c2 - c1) / *CPU_TOTAL
+    (c2 - c1) / (*CPU_TOTAL)
 }
 
 // 进程cpu使用率快照
