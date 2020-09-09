@@ -1,3 +1,5 @@
+#[macro_use]
+extern crate lazy_static;
 mod cpu;
 mod error;
 mod mem;
@@ -20,7 +22,7 @@ fn main() {
 
         let system_mem_usage = system_mem_usage();
 
-        println!("process_cpu_usage\t->\t{:?}%\nsystem_cpu_usage\t->\t{}%\nprocess_mem_usage\t->\t{}%\nsystem_mem_usage\t->\t{}%", 
+        println!("====================\nprocess_cpu_usage\t->\t{:?}%\nsystem_cpu_usage\t->\t{}%\nprocess_mem_usage\t->\t{}%\nsystem_mem_usage\t->\t{}%", 
 					process_usage,
 					system_cpu_usage,
 					process_mem_usage,

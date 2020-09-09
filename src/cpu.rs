@@ -3,6 +3,14 @@ use std::time::Duration;
 // HZ 系统时钟
 // const HZ: i32 = 100;
 
+lazy_static! {
+        static ref DURATION_NUMBER:usize=300;
+        static ref CORE_NUM: f64 = core_num() as f64;// CPU核数
+                static ref DURATION: Duration = Duration::from_millis(300);// cpu采集间隔
+
+    static ref CPU_TOTAL: f64 = *CORE_NUM * (*DURATION).as_secs_f64();// 采集间隔内的 CPU总时间
+}
+
 #[derive(Debug)]
 pub struct SysCPU {
     user: usize,
@@ -51,27 +59,21 @@ impl SysCPU {
 }
 
 /// 进程cpu使用率 需要自定义采集间隔时间
-pub fn process_cpu_usage_with_duration(pid: &str, duration: Duration) -> f64 {
+pub fn process_cpu_usage(pid: &str) -> f64 {
     let c1 = process_cpu_count(pid).unwrap();
 
-    let t1 = std::time::SystemTime::now();
+    // let t1 = std::time::SystemTime::now();
 
-    std::thread::sleep(duration);
+    std::thread::sleep(*DURATION);
 
     let c2 = process_cpu_count(pid).unwrap();
 
-    let duration = std::time::SystemTime::now()
-        .duration_since(t1)
-        .unwrap()
-        .as_secs_f64();
+    // let duration = std::time::SystemTime::now()
+    //     .duration_since(t1)
+    //     .unwrap()
+    //     .as_secs_f64();
 
-    println!("time to f64: {}", duration);
-    ((c2 as f64) - (c1 as f64)) / (duration * core_num().unwrap() as f64)
-}
-
-// 进程cpu使用率 使用 300ms 间隔采集
-pub fn process_cpu_usage(pid: &str) -> f64 {
-    process_cpu_usage_with_duration(pid, Duration::from_millis(300))
+    (c2 - c1) / *CPU_TOTAL
 }
 
 // 进程cpu使用率快照
@@ -87,8 +89,6 @@ pub fn process_cpu_count(pid: &str) -> Result<f64, iError::MyError> {
     let mut count: f64 = 0.0;
 
     for v in 13..=16 {
-        // println!("cpu column num: {}", &v);
-
         // 如果 slice.get(index)存在，则将该数据转换成f64格式
         if let Some(tmp) = column.get(v).and_then(|column| {
             // 如果转换成f64格式成功，则返回转换后的数据
@@ -153,16 +153,14 @@ fn cpu_stat_file_to_struct() -> Result<SysCPU, iError::MyError> {
     Ok(c)
 }
 
-pub fn core_num() -> Result<usize, iError::MyError> {
-    let content = std::fs::read_to_string("/proc/cpuinfo")?;
-    let res = content
+pub fn core_num() -> usize {
+    let content = std::fs::read_to_string("/proc/cpuinfo").unwrap();
+    content
         .lines()
         .filter(|line| line.contains("processor"))
         .into_iter()
         .collect::<Vec<_>>()
-        .len();
-    // println!("core num : {}", res);
-    Ok(res)
+        .len()
 }
 
 mod test {
